@@ -1,0 +1,1360 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NovaMine — Telegram Clicker</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            --bg: #0b0f19;
+            --card: #151c2c;
+            --card-hover: #1c253b;
+            --text: #f3f6fc;
+            --muted: #8492a6;
+            --accent: #3b82f6;
+            --accent-glow: rgba(59, 130, 246, 0.45);
+            --gold: #f59e0b;
+            --gold-glow: rgba(245, 158, 11, 0.45);
+            --purple: #a855f7;
+            --green: #10b981;
+            --danger: #ef4444;
+            --radius: 16px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            -webkit-user-select: none;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background: radial-gradient(circle at 50% 0%, #172440 0%, var(--bg) 60%);
+            background-color: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding-bottom: 84px;
+            overflow-x: hidden;
+            touch-action: manipulation;
+        }
+
+        .app {
+            max-width: 520px;
+            margin: 0 auto;
+            padding: 14px 16px;
+        }
+
+        /* Верхняя панель профиля */
+        .top-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 14px;
+        }
+
+        .player-pill {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 6px 12px 6px 6px;
+            border-radius: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.07);
+        }
+
+        .avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), var(--purple));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 14px;
+        }
+
+        .player-name {
+            font-size: 14px;
+            font-weight: 600;
+            max-width: 130px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .income-pill {
+            background: rgba(16, 185, 129, 0.12);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #34d399;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        /* Блок лиги */
+        .league-box {
+            background: var(--card);
+            border-radius: 14px;
+            padding: 10px 14px;
+            margin-bottom: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .league-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .progress-track {
+            width: 100%;
+            height: 7px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent), var(--purple));
+            border-radius: 10px;
+            transition: width 0.3s ease;
+        }
+
+        /* Баланс */
+        .balance-section {
+            text-align: center;
+            margin: 10px 0 18px;
+        }
+
+        .balance-amount {
+            font-size: 40px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .coin-mini {
+            font-size: 32px;
+            filter: drop-shadow(0 0 8px var(--gold-glow));
+        }
+
+        .tap-meta {
+            font-size: 12px;
+            color: var(--muted);
+            margin-top: 4px;
+        }
+
+        /* Главная кнопка-монета */
+        .tap-stage {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 12px 0 22px;
+            height: 245px;
+        }
+
+        .coin-outer {
+            width: 224px;
+            height: 224px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #3b82f6, #1d4ed8 55%, #0f172a 100%);
+            padding: 12px;
+            box-shadow: 0 0 45px var(--accent-glow), inset 0 2px 6px rgba(255,255,255,0.4);
+            cursor: pointer;
+            touch-action: none;
+            transition: transform 0.08s ease-out, box-shadow 0.25s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .coin-outer.turbo-active {
+            background: radial-gradient(circle at 30% 30%, #fbbf24, #d97706 55%, #451a03 100%);
+            box-shadow: 0 0 65px var(--gold-glow), inset 0 2px 8px rgba(255,255,255,0.6);
+            animation: pulseTurbo 0.8s infinite alternate;
+        }
+
+        @keyframes pulseTurbo {
+            from { filter: brightness(1); }
+            to { filter: brightness(1.18); }
+        }
+
+        .coin-inner {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: radial-gradient(circle at 35% 30%, #1e293b, #0b1120 80%);
+            border: 3px solid rgba(255, 255, 255, 0.15);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+        }
+
+        .coin-core-icon {
+            font-size: 76px;
+            filter: drop-shadow(0 6px 16px rgba(59, 130, 246, 0.5));
+        }
+
+        .turbo-banner {
+            position: absolute;
+            top: -8px;
+            background: linear-gradient(90deg, #f59e0b, #ef4444);
+            color: #fff;
+            font-size: 11px;
+            font-weight: 800;
+            padding: 4px 12px;
+            border-radius: 20px;
+            box-shadow: 0 4px 14px rgba(239, 68, 68, 0.5);
+            display: none;
+        }
+
+        .turbo-banner.show { display: block; }
+
+        /* Вылетающие цифры */
+        .float-num {
+            position: fixed;
+            font-size: 24px;
+            font-weight: 800;
+            color: #fff;
+            pointer-events: none;
+            z-index: 150;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.6);
+            animation: floatUp 0.75s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .float-num.crit {
+            color: #fbbf24;
+            font-size: 30px;
+            text-shadow: 0 0 14px rgba(245, 158, 11, 0.8);
+        }
+
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translate(-50%, 0) scale(0.85); }
+            30% { transform: translate(-50%, -28px) scale(1.15); }
+            100% { opacity: 0; transform: translate(-50%, -95px) scale(0.95); }
+        }
+
+        /* Энергия и Бусты */
+        .energy-panel {
+            background: var(--card);
+            border-radius: var(--radius);
+            padding: 12px 14px;
+            margin-bottom: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .energy-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .energy-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #f59e0b, #fbbf24);
+            border-radius: 10px;
+            transition: width 0.15s linear;
+        }
+
+        .boosts-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .boost-btn {
+            background: var(--card);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
+            padding: 10px 12px;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            text-align: left;
+            transition: 0.15s;
+        }
+
+        .boost-btn:active:not(:disabled) { transform: scale(0.97); }
+        .boost-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+        .boost-icon { font-size: 24px; }
+        .boost-title { font-size: 13px; font-weight: 700; }
+        .boost-sub { font-size: 11px; color: var(--muted); }
+
+        /* Вкладки (экраны) */
+        .view { display: none; animation: fadeIn 0.2s ease; }
+        .view.active { display: block; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 800;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        /* Подвкладки улучшений */
+        .sub-tabs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            background: var(--card);
+            padding: 4px;
+            border-radius: 12px;
+            margin-bottom: 14px;
+        }
+
+        .sub-tab {
+            padding: 9px;
+            border: none;
+            border-radius: 9px;
+            background: transparent;
+            color: var(--muted);
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .sub-tab.active {
+            background: var(--accent);
+            color: #fff;
+        }
+
+        /* Карточки улучшений и квестов */
+        .item-card {
+            background: var(--card);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: var(--radius);
+            padding: 12px 14px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .item-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .item-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+
+        .item-title {
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 2px;
+        }
+
+        .item-desc {
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .item-lvl {
+            font-size: 11px;
+            color: var(--accent);
+            font-weight: 700;
+            margin-left: 6px;
+        }
+
+        .buy-btn {
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            border-radius: 11px;
+            padding: 9px 14px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
+            min-width: 86px;
+            transition: 0.15s;
+        }
+
+        .buy-btn:active:not(:disabled) { transform: scale(0.95); }
+        .buy-btn:disabled {
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--muted);
+            cursor: not-allowed;
+        }
+
+        .buy-btn.claim-ready {
+            background: var(--green);
+            box-shadow: 0 0 14px rgba(16, 185, 129, 0.4);
+        }
+
+        /* Ежедневная награда */
+        .daily-card {
+            background: linear-gradient(135deg, rgba(59,130,246,0.18), rgba(168,85,247,0.18));
+            border: 1px solid rgba(168, 85, 247, 0.35);
+            border-radius: var(--radius);
+            padding: 14px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        /* Профиль и статистика */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .stat-box {
+            background: var(--card);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 14px;
+            padding: 14px;
+        }
+
+        .stat-label { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+        .stat-val { font-size: 18px; font-weight: 800; }
+
+        .action-btn-full {
+            width: 100%;
+            padding: 14px;
+            border-radius: 14px;
+            border: none;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(90deg, var(--accent), var(--purple));
+            color: #fff;
+            box-shadow: 0 6px 20px var(--accent-glow);
+        }
+
+        .btn-danger-outline {
+            background: transparent;
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            color: var(--danger);
+        }
+
+        /* Нижняя навигация */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(15, 21, 35, 0.94);
+            backdrop-filter: blur(12px);
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            justify-content: space-around;
+            padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
+            z-index: 100;
+        }
+
+        .nav-btn {
+            background: none;
+            border: none;
+            color: var(--muted);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 4px 14px;
+            position: relative;
+        }
+
+        .nav-btn.active { color: var(--accent); }
+        .nav-icon { font-size: 20px; }
+
+        .notif-dot {
+            position: absolute;
+            top: 2px;
+            right: 12px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--green);
+            display: none;
+        }
+
+        /* Модальное окно офлайн-дохода */
+        .modal-bg {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.72);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            z-index: 200;
+        }
+
+        .modal-bg.open { display: flex; }
+
+        .modal-box {
+            background: var(--card);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 24px 20px;
+            max-width: 340px;
+            width: 100%;
+            text-align: center;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            top: 14px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-80px);
+            background: #1e293b;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #fff;
+            padding: 10px 18px;
+            border-radius: 24px;
+            font-size: 13px;
+            font-weight: 600;
+            transition: transform 0.25s ease;
+            z-index: 300;
+            white-space: nowrap;
+        }
+        .toast.show { transform: translateX(-50%) translateY(0); }
+    </style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<div class="app">
+    <!-- Верхняя панель -->
+    <header class="top-bar">
+        <div class="player-pill">
+            <div class="avatar" id="userAvatar">N</div>
+            <div class="player-name" id="userName">Игрок</div>
+        </div>
+        <div class="income-pill">
+            <span>⚙️</span>
+            <span id="passiveDisplay">+0 / сек</span>
+        </div>
+    </header>
+
+    <!-- ВКЛАДКА 1: МАЙНИНГ (КЛИКЕР) -->
+    <section id="view-mine" class="view active">
+        <div class="league-box">
+            <div class="league-header">
+                <span id="leagueName">🥉 Бронзовая лига</span>
+                <span id="leagueProgressText" style="color: var(--muted)">0 / 2.5K</span>
+            </div>
+            <div class="progress-track">
+                <div class="progress-fill" id="leagueBar" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <div class="balance-section">
+            <div class="balance-amount">
+                <span class="coin-mini">🪙</span>
+                <span id="balanceDisplay">0</span>
+            </div>
+            <div class="tap-meta" id="tapMeta">Клик: +1 • Крит: 5% (×3)</div>
+        </div>
+
+        <div class="tap-stage">
+            <div class="turbo-banner" id="turboBanner">🔥 ТУРБО ×3 — <span id="turboTimer">15</span>с</div>
+            <div class="coin-outer" id="coinBtn">
+                <div class="coin-inner">
+                    <div class="coin-core-icon">⚡</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="energy-panel">
+            <div class="energy-row">
+                <span>🔋 Энергия</span>
+                <span id="energyDisplay">100 / 100</span>
+            </div>
+            <div class="progress-track">
+                <div class="energy-bar-fill" id="energyBar" style="width: 100%"></div>
+            </div>
+        </div>
+
+        <div class="boosts-row">
+            <button class="boost-btn" id="btnTurbo" onclick="activateTurbo()">
+                <span class="boost-icon">🚀</span>
+                <div>
+                    <div class="boost-title">Турбо ×3</div>
+                    <div class="boost-sub" id="turboStatus">Готово (15 сек)</div>
+                </div>
+            </button>
+            <button class="boost-btn" id="btnRefill" onclick="activateRefill()">
+                <span class="boost-icon">⚡</span>
+                <div>
+                    <div class="boost-title">Заряд 100%</div>
+                    <div class="boost-sub" id="refillStatus">Готово</div>
+                </div>
+            </button>
+        </div>
+    </section>
+
+    <!-- ВКЛАДКА 2: УЛУЧШЕНИЯ -->
+    <section id="view-upgrades" class="view">
+        <div class="section-title">
+            <span>Улучшения</span>
+            <span style="font-size: 15px; color: var(--gold);">🪙 <span id="upgBalance">0</span></span>
+        </div>
+
+        <div class="sub-tabs">
+            <button class="sub-tab active" data-sub="click" onclick="switchUpgradeTab('click')">👆 Клик и Энергия</button>
+            <button class="sub-tab" data-sub="farm" onclick="switchUpgradeTab('farm')">🏭 Пассивная ферма</button>
+        </div>
+
+        <div id="upgradesList"></div>
+    </section>
+
+    <!-- ВКЛАДКА 3: ЗАДАНИЯ -->
+    <section id="view-quests" class="view">
+        <div class="section-title">Задания и бонусы</div>
+
+        <div class="daily-card">
+            <div>
+                <div style="font-weight: 800; font-size: 15px; margin-bottom: 3px;">🎁 Ежедневная награда</div>
+                <div style="font-size: 12px; color: #cbd5e1;" id="dailyDesc">День 1 • Заберите +500 монет</div>
+            </div>
+            <button class="buy-btn claim-ready" id="dailyBtn" onclick="claimDaily()">Забрать</button>
+        </div>
+
+        <div id="questsList"></div>
+    </section>
+
+    <!-- ВКЛАДКА 4: ПРОФИЛЬ И СИНХРОНИЗАЦИЯ -->
+    <section id="view-profile" class="view">
+        <div class="section-title">Статистика</div>
+
+        <div class="stats-grid">
+            <div class="stat-box">
+                <div class="stat-label">Всего заработано</div>
+                <div class="stat-val" id="statTotalEarned">0</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Всего кликов</div>
+                <div class="stat-val" id="statTotalTaps">0</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Доход в час</div>
+                <div class="stat-val" id="statPerHour">0</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Куплено апгрейдов</div>
+                <div class="stat-val" id="statUpgrades">0</div>
+            </div>
+        </div>
+
+        <button class="action-btn-full btn-primary" onclick="sendProgressToBot()">
+            📡 Отправить рекорд боту
+        </button>
+        <button class="action-btn-full btn-danger-outline" onclick="resetProgress()">
+            🗑 Сбросить прогресс
+        </button>
+    </section>
+</div>
+
+<!-- Модалка офлайн-заработка -->
+<div class="modal-bg" id="offlineModal">
+    <div class="modal-box">
+        <div style="font-size: 48px; margin-bottom: 10px;">🏭</div>
+        <h3 style="font-size: 20px; margin-bottom: 8px;">Ферма работала!</h3>
+        <p style="font-size: 13px; color: var(--muted); margin-bottom: 16px;">
+            Пока вас не было (<span id="offlineTimeText"></span>), ваша ферма намайнила:
+        </p>
+        <div style="font-size: 30px; font-weight: 800; color: var(--gold); margin-bottom: 20px;">
+            +<span id="offlineEarnedText">0</span> 🪙
+        </div>
+        <button class="action-btn-full btn-primary" style="margin-bottom: 0;" onclick="closeOfflineModal()">
+            Забрать монеты
+        </button>
+    </div>
+</div>
+
+<!-- Нижняя навигация -->
+<nav class="bottom-nav">
+    <button class="nav-btn active" data-tab="mine" onclick="switchTab('mine')">
+        <span class="nav-icon">⚡</span>
+        <span>Майнить</span>
+    </button>
+    <button class="nav-btn" data-tab="upgrades" onclick="switchTab('upgrades')">
+        <span class="nav-icon">🚀</span>
+        <span>Прокачка</span>
+    </button>
+    <button class="nav-btn" data-tab="quests" onclick="switchTab('quests')">
+        <span class="nav-icon">🎯</span>
+        <span>Задания</span>
+        <span class="notif-dot" id="questsDot"></span>
+    </button>
+    <button class="nav-btn" data-tab="profile" onclick="switchTab('profile')">
+        <span class="nav-icon">🏆</span>
+        <span>Профиль</span>
+    </button>
+</nav>
+
+<script>
+    // ==========================================
+    // 1. TELEGRAM WEB APP API
+    // ==========================================
+    const tg = window.Telegram?.WebApp;
+    const isTelegram = Boolean(tg && tg.initData);
+
+    if (tg) {
+        tg.ready();
+        tg.expand();
+        try {
+            tg.setHeaderColor('#0b0f19');
+            tg.setBackgroundColor('#0b0f19');
+        } catch (e) {}
+    }
+
+    function haptic(type = 'light') {
+        if (!tg?.HapticFeedback) return;
+        if (['success', 'error', 'warning'].includes(type)) {
+            tg.HapticFeedback.notificationOccurred(type);
+        } else {
+            tg.HapticFeedback.impactOccurred(type);
+        }
+    }
+
+    // ==========================================
+    // 2. КОНФИГУРАЦИЯ ИГРЫ
+    // ==========================================
+    const SAVE_KEY = 'novamine_clicker_v1';
+
+    const LEAGUES = [
+        { name: '🥉 Бронзовая лига', min: 0 },
+        { name: '🥈 Серебряная лига', min: 2500 },
+        { name: '🥇 Золотая лига', min: 15000 },
+        { name: '💠 Платиновая лига', min: 100000 },
+        { name: '💎 Алмазная лига', min: 500000 },
+        { name: '👑 Кибер-Легенда', min: 2500000 }
+    ];
+
+    const CLICK_UPGRADES = [
+        { id: 'tapPower', icon: '👆', title: 'Сила клика', desc: '+1 монета за клик', baseCost: 25, mult: 1.65, maxLvl: 50 },
+        { id: 'maxEnergy', icon: '🔋', title: 'Запас энергии', desc: '+50 к макс. энергии', baseCost: 50, mult: 1.6, maxLvl: 40 },
+        { id: 'energyRegen', icon: '⚡', title: 'Регенерация', desc: '+1 энергии в секунду', baseCost: 120, mult: 1.75, maxLvl: 25 },
+        { id: 'critChance', icon: '🎯', title: 'Шанс крита (×3)', desc: '+3% к шансу крита', baseCost: 200, mult: 1.85, maxLvl: 15 }
+    ];
+
+    const FARM_CARDS = [
+        { id: 'gpu', icon: '🖥️', title: 'Видеокарта RTX', baseIncome: 1, baseCost: 60, mult: 1.45 },
+        { id: 'asic', icon: '📟', title: 'ASIC Майнер', baseIncome: 6, baseCost: 350, mult: 1.45 },
+        { id: 'rack', icon: '🗄️', title: 'Серверная стойка', baseIncome: 28, baseCost: 1800, mult: 1.48 },
+        { id: 'quantum', icon: '🧬', title: 'Квантовый чип', baseIncome: 130, baseCost: 9500, mult: 1.50 },
+        { id: 'satellite', icon: '🛰️', title: 'Орбитальный узел', baseIncome: 580, baseCost: 45000, mult: 1.52 },
+        { id: 'reactor', icon: '⚛️', title: 'Нейро-реактор', baseIncome: 2600, baseCost: 220000, mult: 1.55 }
+    ];
+
+    const QUESTS = [
+        { id: 'q_taps_50', icon: '👆', title: 'Первые шаги', desc: 'Сделайте 50 кликов', target: 50, reward: 250, getVal: s => s.totalTaps },
+        { id: 'q_taps_500', icon: '🔥', title: 'Быстрые пальцы', desc: 'Сделайте 500 кликов', target: 500, reward: 2500, getVal: s => s.totalTaps },
+        { id: 'q_upg_5', icon: '🛠️', title: 'Инженер', desc: 'Купите 5 любых улучшений', target: 5, reward: 800, getVal: s => getTotalUpgradesCount() },
+        { id: 'q_passive_20', icon: '🏭', title: 'Пассивный доход', desc: 'Разгоните ферму до 20/сек', target: 20, reward: 3000, getVal: s => getPassivePerSec() },
+        { id: 'q_silver', icon: '🥈', title: 'Серебряная лига', desc: 'Заработайте 2 500 монет всего', target: 2500, reward: 1500, getVal: s => s.totalEarned },
+        { id: 'q_gold', icon: '🥇', title: 'Золотой магнат', desc: 'Заработайте 15 000 монет всего', target: 15000, reward: 10000, getVal: s => s.totalEarned }
+    ];
+
+    // Начальное состояние
+    function createDefaultState() {
+        return {
+            balance: 0,
+            totalEarned: 0,
+            totalTaps: 0,
+            energy: 100,
+            levels: {
+                tapPower: 0,
+                maxEnergy: 0,
+                energyRegen: 0,
+                critChance: 0,
+                gpu: 0,
+                asic: 0,
+                rack: 0,
+                quantum: 0,
+                satellite: 0,
+                reactor: 0
+            },
+            claimedQuests: [],
+            dailyStreak: 0,
+            lastDailyDate: null,
+            turboEndsAt: 0,
+            turboCooldownAt: 0,
+            refillCooldownAt: 0,
+            lastSavedAt: Date.now()
+        };
+    }
+
+    let state = createDefaultState();
+    let activeTab = 'mine';
+    let activeUpgradeSubTab = 'click';
+
+    // ==========================================
+    // 3. РАСЧЁТЫ И ФОРМАТИРОВАНИЕ
+    // ==========================================
+    function formatNum(n) {
+        n = Math.floor(n);
+        if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B';
+        if (n >= 1e6) return (n / 1e6).toFixed(2) + 'M';
+        if (n >= 1e4) return (n / 1e3).toFixed(1) + 'K';
+        return n.toLocaleString('ru-RU');
+    }
+
+    function getTapPower() {
+        const base = 1 + (state.levels.tapPower || 0);
+        return Date.now() < state.turboEndsAt ? base * 3 : base;
+    }
+
+    function getMaxEnergy() {
+        return 100 + (state.levels.maxEnergy || 0) * 50;
+    }
+
+    function getEnergyRegen() {
+        return 1 + (state.levels.energyRegen || 0);
+    }
+
+    function getCritChance() {
+        return 0.05 + (state.levels.critChance || 0) * 0.03;
+    }
+
+    function getPassivePerSec() {
+        return FARM_CARDS.reduce((sum, card) => sum + (state.levels[card.id] || 0) * card.baseIncome, 0);
+    }
+
+    function getUpgradeCost(item) {
+        const lvl = state.levels[item.id] || 0;
+        return Math.floor(item.baseCost * Math.pow(item.mult, lvl));
+    }
+
+    function getTotalUpgradesCount() {
+        return Object.values(state.levels).reduce((a, b) => a + b, 0);
+    }
+
+    function getCurrentLeague() {
+        let idx = 0;
+        for (let i = 0; i < LEAGUES.length; i++) {
+            if (state.totalEarned >= LEAGUES[i].min) idx = i;
+        }
+        return { current: LEAGUES[idx], next: LEAGUES[idx + 1] || null, index: idx };
+    }
+
+    function showToast(msg) {
+        const el = document.getElementById('toast');
+        el.textContent = msg;
+        el.classList.add('show');
+        clearTimeout(window._toastTimer);
+        window._toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+    }
+
+    // ==========================================
+    // 4. СОХРАНЕНИЕ И ОФЛАЙН-ДОХОД
+    // ==========================================
+    function saveGame() {
+        state.lastSavedAt = Date.now();
+        localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+    }
+
+    function loadGame() {
+        try {
+            const raw = localStorage.getItem(SAVE_KEY);
+            if (!raw) return;
+            const saved = JSON.parse(raw);
+            state = {
+                ...createDefaultState(),
+                ...saved,
+                levels: { ...createDefaultState().levels, ...(saved.levels || {}) }
+            };
+
+            const now = Date.now();
+            const elapsedSec = Math.max(0, (now - (state.lastSavedAt || now)) / 1000);
+
+            // Восстанавливаем энергию за время отсутствия
+            state.energy = Math.min(getMaxEnergy(), state.energy + elapsedSec * getEnergyRegen());
+
+            // Офлайн-доход фермы (максимум 3 часа)
+            const passive = getPassivePerSec();
+            if (passive > 0 && elapsedSec >= 30) {
+                const cappedSec = Math.min(elapsedSec, 3 * 3600);
+                const earned = Math.floor(cappedSec * passive);
+                if (earned > 0) {
+                    state.balance += earned;
+                    state.totalEarned += earned;
+                    const mins = Math.floor(cappedSec / 60);
+                    document.getElementById('offlineTimeText').textContent =
+                        mins >= 60 ? `${Math.floor(mins / 60)}ч ${mins % 60}м` : `${mins} мин`;
+                    document.getElementById('offlineEarnedText').textContent = formatNum(earned);
+                    document.getElementById('offlineModal').classList.add('open');
+                }
+            }
+        } catch (e) {
+            console.error('Ошибка загрузки:', e);
+        }
+    }
+
+    function closeOfflineModal() {
+        haptic('success');
+        document.getElementById('offlineModal').classList.remove('open');
+        saveGame();
+        updateHUD();
+    }
+
+    // ==========================================
+    // 5. МЕХАНИКА КЛИКА И БУСТОВ
+    // ==========================================
+    const coinBtn = document.getElementById('coinBtn');
+
+    coinBtn.addEventListener('pointerdown', (e) => {
+        const isTurbo = Date.now() < state.turboEndsAt;
+        const energyCost = isTurbo ? 0 : 1; // В режиме Турбо энергия не тратится
+
+        if (state.energy < energyCost) {
+            haptic('error');
+            showToast('⚡ Закончилась энергия!');
+            return;
+        }
+
+        // 3D-наклон монеты в сторону пальца
+        const rect = coinBtn.getBoundingClientRect();
+        const dx = (e.clientX - (rect.left + rect.width / 2)) / (rect.width / 2);
+        const dy = (e.clientY - (rect.top + rect.height / 2)) / (rect.height / 2);
+        coinBtn.style.transform = `perspective(500px) rotateY(${dx * 16}deg) rotateX(${-dy * 16}deg) scale(0.94)`;
+        clearTimeout(coinBtn._tiltTimer);
+        coinBtn._tiltTimer = setTimeout(() => {
+            coinBtn.style.transform = 'perspective(500px) rotateY(0deg) rotateX(0deg) scale(1)';
+        }, 90);
+
+        // Расчёт урона и крита
+        const isCrit = Math.random() < getCritChance();
+        const gain = getTapPower() * (isCrit ? 3 : 1);
+
+        state.energy = Math.max(0, state.energy - energyCost);
+        state.balance += gain;
+        state.totalEarned += gain;
+        state.totalTaps += 1;
+
+        haptic(isCrit ? 'medium' : 'light');
+        spawnFloatNumber(e.clientX, e.clientY, `+${formatNum(gain)}`, isCrit);
+        updateHUD();
+    });
+
+    function spawnFloatNumber(x, y, text, isCrit) {
+        const el = document.createElement('div');
+        el.className = 'float-num' + (isCrit ? ' crit' : '');
+        el.textContent = isCrit ? `💥 ${text}` : text;
+        el.style.left = (x + (Math.random() * 24 - 12)) + 'px';
+        el.style.top = (y - 16) + 'px';
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 760);
+    }
+
+    function activateTurbo() {
+        const now = Date.now();
+        if (now < state.turboCooldownAt) return;
+        state.turboEndsAt = now + 15000;       // 15 сек активности
+        state.turboCooldownAt = now + 90000;   // 90 сек перезарядки
+        haptic('success');
+        showToast('🔥 Турбо ×3 активирован на 15 сек!');
+        updateHUD();
+        saveGame();
+    }
+
+    function activateRefill() {
+        const now = Date.now();
+        if (now < state.refillCooldownAt) return;
+        state.energy = getMaxEnergy();
+        state.refillCooldownAt = now + 120000; // 2 мин перезарядки
+        haptic('success');
+        showToast('⚡ Энергия полностью восстановлена!');
+        updateHUD();
+        saveGame();
+    }
+
+    // ==========================================
+    // 6. ПОКУПКА УЛУЧШЕНИЙ И КВЕСТЫ
+    // ==========================================
+    function buyUpgrade(id) {
+        const item = [...CLICK_UPGRADES, ...FARM_CARDS].find(i => i.id === id);
+        if (!item) return;
+
+        const lvl = state.levels[id] || 0;
+        if (item.maxLvl && lvl >= item.maxLvl) return;
+
+        const cost = getUpgradeCost(item);
+        if (state.balance < cost) {
+            haptic('error');
+            return;
+        }
+
+        state.balance -= cost;
+        state.levels[id] = lvl + 1;
+        if (id === 'maxEnergy') state.energy += 50;
+
+        haptic('success');
+        saveGame();
+        renderUpgrades();
+        updateHUD();
+    }
+
+    function getTodayStr() {
+        const d = new Date();
+        return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+    }
+
+    function claimDaily() {
+        const today = getTodayStr();
+        if (state.lastDailyDate === today) return;
+
+        const nextDay = (state.dailyStreak % 7) + 1;
+        const reward = nextDay * 500;
+        state.dailyStreak = nextDay;
+        state.lastDailyDate = today;
+        state.balance += reward;
+        state.totalEarned += reward;
+
+        haptic('success');
+        showToast(`🎁 Получено +${formatNum(reward)} монет (День ${nextDay})!`);
+        saveGame();
+        renderQuests();
+        updateHUD();
+    }
+
+    function claimQuest(questId) {
+        if (state.claimedQuests.includes(questId)) return;
+        const q = QUESTS.find(item => item.id === questId);
+        if (!q || q.getVal(state) < q.target) return;
+
+        state.claimedQuests.push(questId);
+        state.balance += q.reward;
+        state.totalEarned += q.reward;
+
+        haptic('success');
+        showToast(`🎯 Награда +${formatNum(q.reward)} монет!`);
+        saveGame();
+        renderQuests();
+        updateHUD();
+    }
+
+    // ==========================================
+    // 7. ОТРИСОВКА ИНТЕРФЕЙСА
+    // ==========================================
+    function initUser() {
+        const user = tg?.initDataUnsafe?.user;
+        if (user) {
+            const name = user.first_name || user.username || 'Игрок';
+            document.getElementById('userName').textContent = name;
+            document.getElementById('userAvatar').textContent = name[0].toUpperCase();
+        }
+    }
+
+    function updateHUD() {
+        const now = Date.now();
+        const maxE = getMaxEnergy();
+        const passive = getPassivePerSec();
+        const isTurbo = now < state.turboEndsAt;
+
+        // Баланс и доход
+        document.getElementById('balanceDisplay').textContent = formatNum(state.balance);
+        document.getElementById('upgBalance').textContent = formatNum(state.balance);
+        document.getElementById('passiveDisplay').textContent = `+${formatNum(passive)} / сек`;
+
+        const critPct = Math.round(getCritChance() * 100);
+        document.getElementById('tapMeta').textContent =
+            `Клик: +${formatNum(getTapPower())} • Крит: ${critPct}% (×3)`;
+
+        // Энергия
+        document.getElementById('energyDisplay').textContent = `${Math.floor(state.energy)} / ${maxE}`;
+        document.getElementById('energyBar').style.width = `${Math.min(100, (state.energy / maxE) * 100)}%`;
+
+        // Лига
+        const { current, next } = getCurrentLeague();
+        document.getElementById('leagueName').textContent = current.name;
+        if (next) {
+            const pct = Math.min(100, ((state.totalEarned - current.min) / (next.min - current.min)) * 100);
+            document.getElementById('leagueBar').style.width = `${Math.max(0, pct)}%`;
+            document.getElementById('leagueProgressText').textContent =
+                `${formatNum(state.totalEarned)} / ${formatNum(next.min)}`;
+        } else {
+            document.getElementById('leagueBar').style.width = '100%';
+            document.getElementById('leagueProgressText').textContent = 'МАКС. РАНГ';
+        }
+
+        // Турбо-состояние
+        coinBtn.classList.toggle('turbo-active', isTurbo);
+        const turboBanner = document.getElementById('turboBanner');
+        turboBanner.classList.toggle('show', isTurbo);
+        if (isTurbo) {
+            document.getElementById('turboTimer').textContent = Math.ceil((state.turboEndsAt - now) / 1000);
+        }
+
+        // Кнопки бустов
+        const btnTurbo = document.getElementById('btnTurbo');
+        const turboCd = Math.ceil((state.turboCooldownAt - now) / 1000);
+        btnTurbo.disabled = turboCd > 0;
+        document.getElementById('turboStatus').textContent =
+            isTurbo ? 'Активно!' : (turboCd > 0 ? `Через ${turboCd} сек` : 'Готово (15 сек)');
+
+        const btnRefill = document.getElementById('btnRefill');
+        const refillCd = Math.ceil((state.refillCooldownAt - now) / 1000);
+        btnRefill.disabled = refillCd > 0;
+        document.getElementById('refillStatus').textContent =
+            refillCd > 0 ? `Через ${refillCd} сек` : 'Готово';
+
+        // Индикатор доступных наград на иконке "Задания"
+        const hasDaily = state.lastDailyDate !== getTodayStr();
+        const hasQuest = QUESTS.some(q => !state.claimedQuests.includes(q.id) && q.getVal(state) >= q.target);
+        document.getElementById('questsDot').style.display = (hasDaily || hasQuest) ? 'block' : 'none';
+
+        // Обновляем доступность кнопок покупки без перерисовки DOM
+        if (activeTab === 'upgrades') {
+            document.querySelectorAll('.buy-btn[data-cost]').forEach(btn => {
+                const cost = Number(btn.dataset.cost);
+                const isMax = btn.dataset.max === 'true';
+                btn.disabled = isMax || state.balance < cost;
+            });
+        }
+    }
+
+    function renderUpgrades() {
+        const list = document.getElementById('upgradesList');
+        const items = activeUpgradeSubTab === 'click' ? CLICK_UPGRADES : FARM_CARDS;
+
+        list.innerHTML = items.map(item => {
+            const lvl = state.levels[item.id] || 0;
+            const cost = getUpgradeCost(item);
+            const isMax = item.maxLvl && lvl >= item.maxLvl;
+            const desc = activeUpgradeSubTab === 'click'
+                ? item.desc
+                : `+${formatNum(item.baseIncome)}/сек (сейчас: +${formatNum(lvl * item.baseIncome)}/сек)`;
+
+            return `
+                <div class="item-card">
+                    <div class="item-left">
+                        <div class="item-icon">${item.icon}</div>
+                        <div>
+                            <div class="item-title">
+                                ${item.title}
+                                <span class="item-lvl">Ур. ${lvl}</span>
+                            </div>
+                            <div class="item-desc">${desc}</div>
+                        </div>
+                    </div>
+                    <button class="buy-btn"
+                            data-cost="${cost}"
+                            data-max="${Boolean(isMax)}"
+                            ${(isMax || state.balance < cost) ? 'disabled' : ''}
+                            onclick="buyUpgrade('${item.id}')">
+                        ${isMax ? 'MAX' : `🪙 ${formatNum(cost)}`}
+                    </button>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function renderQuests() {
+        // Ежедневная награда
+        const claimedToday = state.lastDailyDate === getTodayStr();
+        const nextDay = (state.dailyStreak % 7) + 1;
+        const dailyBtn = document.getElementById('dailyBtn');
+        dailyBtn.disabled = claimedToday;
+        dailyBtn.textContent = claimedToday ? 'Получено' : 'Забрать';
+        dailyBtn.classList.toggle('claim-ready', !claimedToday);
+        document.getElementById('dailyDesc').textContent = claimedToday
+            ? `Серия: ${state.dailyStreak} дн. • Возвращайтесь завтра!`
+            : `День ${nextDay} • Награда +${formatNum(nextDay * 500)} монет`;
+
+        // Список квестов
+        const container = document.getElementById('questsList');
+        container.innerHTML = QUESTS.map(q => {
+            const claimed = state.claimedQuests.includes(q.id);
+            const cur = Math.min(q.target, Math.floor(q.getVal(state)));
+            const ready = !claimed && cur >= q.target;
+
+            return `
+                <div class="item-card">
+                    <div class="item-left">
+                        <div class="item-icon">${q.icon}</div>
+                        <div>
+                            <div class="item-title">${q.title}</div>
+                            <div class="item-desc">${q.desc} (${formatNum(cur)} / ${formatNum(q.target)})</div>
+                        </div>
+                    </div>
+                    <button class="buy-btn ${ready ? 'claim-ready' : ''}"
+                            ${ready ? '' : 'disabled'}
+                            onclick="claimQuest('${q.id}')">
+                        ${claimed ? '✓ Готово' : `+${formatNum(q.reward)}`}
+                    </button>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function renderProfile() {
+        document.getElementById('statTotalEarned').textContent = formatNum(state.totalEarned);
+        document.getElementById('statTotalTaps').textContent = formatNum(state.totalTaps);
+        document.getElementById('statPerHour').textContent = formatNum(getPassivePerSec() * 3600);
+        document.getElementById('statUpgrades').textContent = getTotalUpgradesCount();
+    }
+
+    // ==========================================
+    // 8. НАВИГАЦИЯ И ОТПРАВКА ДАННЫХ В БОТА
+    // ==========================================
+    function switchTab(tab) {
+        haptic('light');
+        activeTab = tab;
+
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+        document.getElementById(`view-${tab}`).classList.add('active');
+
+        document.querySelectorAll('.nav-btn').forEach(b => {
+            b.classList.toggle('active', b.dataset.tab === tab);
+        });
+
+        if (tab === 'upgrades') renderUpgrades();
+        if (tab === 'quests') renderQuests();
+        if (tab === 'profile') renderProfile();
+        updateHUD();
+    }
+
+    function switchUpgradeTab(sub) {
+        haptic('light');
+        activeUpgradeSubTab = sub;
+        document.querySelectorAll('.sub-tab').forEach(b => {
+            b.classList.toggle('active', b.dataset.sub === sub);
+        });
+        renderUpgrades();
+    }
+
+    function sendProgressToBot() {
+        saveGame();
+        const payload = {
+            type: 'clicker_stats',
+            balance: Math.floor(state.balance),
+            totalEarned: Math.floor(state.totalEarned),
+            totalTaps: state.totalTaps,
+            passivePerSec: getPassivePerSec(),
+            league: getCurrentLeague().current.name
+        };
+
+        haptic('success');
+
+        if (isTelegram && tg) {
+            try {
+                tg.sendData(JSON.stringify(payload));
+            } catch (e) {
+                showToast('Откройте через кнопку клавиатуры бота');
+            }
+        } else {
+            alert(
+                '📡 В Telegram эти данные отправятся вашему боту:\n\n' +
+                JSON.stringify(payload, null, 2)
+            );
+        }
+    }
+
+    function resetProgress() {
+        if (!confirm('Точно сбросить весь прогресс кликера?')) return;
+        localStorage.removeItem(SAVE_KEY);
+        state = createDefaultState();
+        haptic('warning');
+        showToast('Прогресс сброшен');
+        renderProfile();
+        updateHUD();
+    }
+
+    // ==========================================
+    // 9. ИГРОВОЙ ЦИКЛ (10 РАЗ В СЕКУНДУ)
+    // ==========================================
+    let lastTick = Date.now();
+    let saveCounter = 0;
+
+    setInterval(() => {
+        const now = Date.now();
+        const dt = Math.min(1, (now - lastTick) / 1000);
+        lastTick = now;
+
+        // Пассивный майнинг
+        const passiveGain = getPassivePerSec() * dt;
+        if (passiveGain > 0) {
+            state.balance += passiveGain;
+            state.totalEarned += passiveGain;
+        }
+
+        // Регенерация энергии
+        const maxE = getMaxEnergy();
+        if (state.energy < maxE) {
+            state.energy = Math.min(maxE, state.energy + getEnergyRegen() * dt);
+        }
+
+        updateHUD();
+
+        // Автосохранение каждые 5 секунд
+        saveCounter += dt;
+        if (saveCounter >= 5) {
+            saveCounter = 0;
+            saveGame();
+        }
+    }, 100);
+
+    // Сохранение при сворачивании/закрытии
+    window.addEventListener('beforeunload', saveGame);
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) saveGame();
+    });
+
+    // Запуск
+    initUser();
+    loadGame();
+    updateHUD();
+</script>
+</body>
+</html>
